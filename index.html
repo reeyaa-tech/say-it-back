@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Say It Back | Tone Mirror & Fixer</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    /* Minimal emergency styles so the UI doesn’t break if CSS loads late */
+    body { font-family: sans-serif; margin: 0; background: #f7f7fb; }
+    .dark { background: #121212; color: #eee; }
+  </style>
+</head>
+
+<body>
+  <!-- ANALYZE BUTTON -->
+  <button class="btn-gradient" id="analyzeBtn">
+    <span id="btnText">🔁 Say it back</span>
+    <span class="loader" id="loader"></span>
+  </button>
+
+  <button class="btn-outline" id="darkToggle">🌙</button>
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="logo">
+      🗣️ <span>Say It Back</span>
+    </div>
+
+    <div class="emoji-bar">
+      <span title="Friendly">😊</span>
+      <span title="Neutral">😐</span>
+      <span title="Confusing">🤔</span>
+      <span title="Helpful">💡</span>
+      <span title="Rephrase">🔁</span>
+    </div>
+
+    <div class="actions">
+      <button class="btn-outline">Help</button>
+      <button class="btn-primary">Login</button>
+    </div>
+  </header>
+
+  <!-- MAIN -->
+  <main class="container">
+    <!-- INPUT CARD -->
+    <section class="card">
+      <h2>Say It Back</h2>
+      <p class="subtitle">See how your message sounds to others</p>
+      <textarea placeholder="Type something you want to say…"></textarea>
+      <div class="card-footer">
+        <span class="hint">Shift + Enter to analyze</span>
+        <button class="btn-gradient" id="analyzeBtn2">🔁 Say it back</button>
+      </div>
+    </section>
+
+    <!-- OUTPUT CARD -->
+    <section class="card">
+      <h2>How it sounds</h2>
+      <div class="badges"></div>
+      <div class="output-box">
+        <strong>✨ Suggested rewrite</strong>
+        <p>Your improved message will appear here…</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- FLOATING EMOJIS -->
+  <div class="floating-emoji e1">😊</div>
+  <div class="floating-emoji e2">💬</div>
+  <div class="floating-emoji e3">💡</div>
+  <div class="floating-emoji e4">✨</div>
+  <div class="floating-emoji e5">🤔</div>
+
+  <!-- SCRIPT -->
+  <script>
+    // Dark mode toggle
+    document.getElementById("darkToggle").onclick = () => {
+      document.body.classList.toggle("dark");
+    };
+
+    // Button loader animation
+    const btns = [document.getElementById("analyzeBtn"), document.getElementById("analyzeBtn2")];
+    const textEl = document.getElementById("btnText");
+    const loader = document.getElementById("loader");
+
+    function startLoading() {
+      textEl.style.display = "none";
+      loader.style.display = "inline-block";
+    }
+    function stopLoading() {
+      loader.style.display = "none";
+      textEl.style.display = "inline";
+    }
+
+    btns.forEach(btn => btn.onclick = () => {});
+
+    // Emoji click highlight
+    document.querySelectorAll(".emoji-bar span").forEach(emoji => {
+      emoji.onclick = () => {
+        document.querySelectorAll(".emoji-bar span").forEach(e => e.classList.remove("active"));
+        emoji.classList.add("active");
+      };
+    });
+
+    // -------- VERCEL BACKEND CALL -------- //
+    const inputBox = document.querySelector("textarea");
+    const analyzeBtn = document.getElementById("analyzeBtn");
+    const analyzeBtn2 = document.getElementById("analyzeBtn2");
+    const outputCard = document.querySelector(".output-box p");
+    const badgeContainer = document.querySelector(".badges");
+
+    async function analyze() {
+      const text = inputBox.value.trim();
+      if (!text) return;
+
+      startLoading();
+
+      try {
+        const res = await fetch("/api/analyze", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text })
+        });
+
+        const json = await res.json();
+
+        badgeContainer.innerHTML = `
+          <span class="badge">🎭 ${json.tone}</span>
+          <span class="badge">🎯 ${json.intent}</span>
+          <span class="badge warn">⚠️ ${json.impact}</span>
+        `;
+
+        outputCard.textContent = `“${json.rewrite}”`;
+      } catch (err) {
+        outputCard.textContent = "Model could not analyze. Try again!";
+      }
+
+      stopLoading();
+    }
+
+    analyzeBtn.onclick = analyze;
+    analyzeBtn2.onclick = analyze;
+    inputBox.addEventListener("keydown", e => {
+      if (e.key === "Enter" && e.shiftKey) analyze();
+    });
+  </script>
+</body>
+</html>
