@@ -1,0 +1,16 @@
+{
+  "name": "say-it-back",
+  "version": "1.0.0",
+  "description": "",
+  "main": "analyze.js",
+  "type": "module",
+  "scripts": {
+    "start": "node analyze.js"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.11.5",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^4.22.1"
+  }
+}

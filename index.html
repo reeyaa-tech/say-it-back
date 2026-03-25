@@ -6,14 +6,29 @@
   <title>Say It Back | Tone Mirror & Fixer</title>
   <link rel="stylesheet" href="style.css" />
   <style>
-    /* Minimal emergency styles so the UI doesn’t break if CSS loads late */
-    body { font-family: sans-serif; margin: 0; background: #f7f7fb; }
-    .dark { background: #121212; color: #eee; }
+    body { font-family: sans-serif; margin: 0; background:#f7f7fb; }
+    .dark { background:#121212; color:#eee; }
+    .history { margin-top:2rem; }
+    .history-item { padding:1rem; border-radius:8px; background:#fff; margin:.5rem 0; }
+    .dark .history-item { background:#1f1f1f; }
+    .section-label { font-size:.85rem; text-transform:uppercase; opacity:.7; margin-top:1rem; }
+    /* Vibe Meter Bar */
+    .vibe-container { background: #333; height: 10px; width: 100%; border-radius: 5px; margin: 10px 0; overflow: hidden; }
+    #vibeBar { width: 0%; height: 100%; background: #6366f1; transition: all 0.8s ease; }
+    
+    /* Badges */
+    .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: bold; color: white; text-transform: uppercase; }
+    
+    /* Help Modal (Make sure this is here!) */
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center; }
+    .modal-card { background: white; color: black; padding: 2rem; border-radius: 12px; max-width: 400px; width: 90%; position: relative; }
+    .dark .modal-card { background: #1f1f1f; color: #eee; }
+    .tab-btn { padding: 8px 16px; cursor: pointer; border: none; background: #ddd; border-radius: 4px; }
+    .tab-btn.active { background: #6366f1; color: white; }
   </style>
 </head>
 
 <body>
-  <!-- ANALYZE BUTTON -->
   <button class="btn-gradient" id="analyzeBtn">
     <span id="btnText">🔁 Say it back</span>
     <span class="loader" id="loader"></span>
@@ -21,11 +36,8 @@
 
   <button class="btn-outline" id="darkToggle">🌙</button>
 
-  <!-- HEADER -->
   <header class="header">
-    <div class="logo">
-      🗣️ <span>Say It Back</span>
-    </div>
+    <div class="logo">🗣️ <span>Say It Back</span></div>
 
     <div class="emoji-bar">
       <span title="Friendly">😊</span>
@@ -36,114 +48,216 @@
     </div>
 
     <div class="actions">
-      <button class="btn-outline">Help</button>
-      <button class="btn-primary">Login</button>
-    </div>
+  <button class="btn-outline">Help</button>
+  <button class="btn-primary" id="loginBtn">Login</button>
+  <button class="btn-outline" id="logoutBtn" style="display: none; border-color: #ff4757; color: #ff4757;">Logout</button>
+</div>
   </header>
 
-  <!-- MAIN -->
   <main class="container">
-    <!-- INPUT CARD -->
     <section class="card">
       <h2>Say It Back</h2>
       <p class="subtitle">See how your message sounds to others</p>
-      <textarea placeholder="Type something you want to say…"></textarea>
+      <textarea id="userInput" placeholder="Type something you want to say…"></textarea>
       <div class="card-footer">
         <span class="hint">Shift + Enter to analyze</span>
         <button class="btn-gradient" id="analyzeBtn2">🔁 Say it back</button>
       </div>
     </section>
 
-    <!-- OUTPUT CARD -->
     <section class="card">
-      <h2>How it sounds</h2>
+      <h2>Analysis</h2>
       <div class="badges"></div>
-      <div class="output-box">
-        <strong>✨ Suggested rewrite</strong>
-        <p>Your improved message will appear here…</p>
-      </div>
+
+      <div class="section-label">Tone</div>
+      <p id="toneOut">...</p>
+
+      <div class="section-label">Intent</div>
+      <p id="intentOut">...</p>
+
+      <div class="section-label">Impact</div>
+      <p id="impactOut">...</p>
+
+      <div class="section-label">Suggested Rewrite</div>
+<div class="output-box" style="position: relative; background: #fff; padding: 1.5rem; border-radius: 8px; border: 1px solid #ddd; margin-top: 5px;">
+  <p id="rewriteOut" style="margin: 0; padding-right: 60px; color: #333;">Your improved message will appear here…</p>
+  
+  <button onclick="copyRewrite()" class="btn-outline" style="position: absolute; top: 10px; right: 10px; font-size: 0.7rem; padding: 4px 8px; cursor: pointer;">Copy</button>
+</div>
     </section>
+
+    <section class="card history">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+    <h2 style="margin: 0;">History</h2>
+    <button class="btn-outline" onclick="clearHistory()" style="font-size: 0.75rem; padding: 5px 10px;">
+      🗑️ Clear All
+    </button>
+  </div>
+  
+  <div id="historyList">No messages yet.</div>
+</section>
   </main>
 
-  <!-- FLOATING EMOJIS -->
   <div class="floating-emoji e1">😊</div>
   <div class="floating-emoji e2">💬</div>
   <div class="floating-emoji e3">💡</div>
   <div class="floating-emoji e4">✨</div>
   <div class="floating-emoji e5">🤔</div>
 
-  <!-- SCRIPT -->
   <script>
-    // Dark mode toggle
-    document.getElementById("darkToggle").onclick = () => {
-      document.body.classList.toggle("dark");
-    };
+  // 1. Dark mode toggle
+  document.getElementById("darkToggle").onclick = () => document.body.classList.toggle("dark");
 
-    // Button loader animation
-    const btns = [document.getElementById("analyzeBtn"), document.getElementById("analyzeBtn2")];
-    const textEl = document.getElementById("btnText");
-    const loader = document.getElementById("loader");
+  // 2. UI element references
+  const textEl = document.getElementById("btnText");
+  const loader = document.getElementById("loader");
+  const loginBtn = document.getElementById("loginBtn"); // Unified reference
+  const logoutBtn = document.getElementById("logoutBtn");
+  const analyzeBtn2 = document.getElementById("analyzeBtn2");
 
-    function startLoading() {
-      textEl.style.display = "none";
-      loader.style.display = "inline-block";
-    }
-    function stopLoading() {
+  // 3. Analysis logic
+  async function analyzeText() {
+    const input = document.getElementById("userInput").value;
+    if (!input) return alert("Please type something first!");
+
+    textEl.style.display = "none";
+    loader.style.display = "inline-block";
+
+    try {
+      const res = await fetch("http://localhost:3001/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: input })
+      });
+
+      const data = await res.json();
+
+      document.getElementById("toneOut").textContent = data.tone;
+      document.getElementById("intentOut").textContent = data.intent;
+      document.getElementById("impactOut").textContent = data.impact;
+      document.getElementById("rewriteOut").textContent = data.rewrite;
+
+      const badgeContainer = document.querySelector(".badges");
+      const toneLower = data.tone.toLowerCase();
+      let color = toneLower.includes("hostile") || toneLower.includes("aggressive") ? "#ff4757" : "#2ed573";
+      badgeContainer.innerHTML = `<span class="badge" style="background:${color}">${data.tone.split(',')[0]}</span>`;
+
+      let savedHistory = JSON.parse(localStorage.getItem("sayItBackHistory") || "[]");
+      savedHistory.unshift({ text: input, tone: data.tone, time: new Date().toLocaleTimeString() });
+      localStorage.setItem("sayItBackHistory", JSON.stringify(savedHistory.slice(0, 10)));
+      
+      renderHistory();
+    } catch (err) {
+      console.error("Connection Error:", err);
+      alert("Make sure your backend server is running!");
+    } finally {
       loader.style.display = "none";
       textEl.style.display = "inline";
     }
+  }
 
-    btns.forEach(btn => btn.onclick = () => {});
-
-    // Emoji click highlight
-    document.querySelectorAll(".emoji-bar span").forEach(emoji => {
-      emoji.onclick = () => {
-        document.querySelectorAll(".emoji-bar span").forEach(e => e.classList.remove("active"));
-        emoji.classList.add("active");
-      };
-    });
-
-    // -------- VERCEL BACKEND CALL -------- //
-    const inputBox = document.querySelector("textarea");
-    const analyzeBtn = document.getElementById("analyzeBtn");
-    const analyzeBtn2 = document.getElementById("analyzeBtn2");
-    const outputCard = document.querySelector(".output-box p");
-    const badgeContainer = document.querySelector(".badges");
-
-    async function analyze() {
-      const text = inputBox.value.trim();
-      if (!text) return;
-
-      startLoading();
-
-      try {
-        const res = await fetch("/api/analyze", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text })
-        });
-
-        const json = await res.json();
-
-        badgeContainer.innerHTML = `
-          <span class="badge">🎭 ${json.tone}</span>
-          <span class="badge">🎯 ${json.intent}</span>
-          <span class="badge warn">⚠️ ${json.impact}</span>
-        `;
-
-        outputCard.textContent = `“${json.rewrite}”`;
-      } catch (err) {
-        outputCard.textContent = "Model could not analyze. Try again!";
-      }
-
-      stopLoading();
+  // 4. Copy to Clipboard Function
+  function copyRewrite() {
+    const text = document.getElementById("rewriteOut").textContent;
+    if (text && !text.includes("Your improved message")) {
+      navigator.clipboard.writeText(text);
+      alert("Copied to clipboard! ✅");
     }
+  }
 
-    analyzeBtn.onclick = analyze;
-    analyzeBtn2.onclick = analyze;
-    inputBox.addEventListener("keydown", e => {
-      if (e.key === "Enter" && e.shiftKey) analyze();
-    });
-  </script>
-</body>
-</html>
+  // 5. History Functions
+  function clearHistory() {
+    if (confirm("Are you sure you want to delete your entire history?")) {
+      localStorage.removeItem("sayItBackHistory");
+      renderHistory();
+    }
+  }
+
+  function renderHistory() {
+    const historyList = document.getElementById("historyList");
+    const savedHistory = JSON.parse(localStorage.getItem("sayItBackHistory") || "[]");
+    if (savedHistory.length === 0) {
+      historyList.innerHTML = "No messages yet.";
+      return;
+    }
+    historyList.innerHTML = savedHistory.map(item => `
+      <div class="history-item">
+        <small style="opacity:0.5">${item.time}</small><br>
+        <strong>You:</strong> ${item.text}<br>
+        <small style="color:#6366f1">${item.tone}</small>
+      </div>`).join('');
+  }
+
+  // 6. Login & Logout Logic
+  loginBtn.onclick = () => {
+    const name = prompt("Enter your username:");
+    if (name) {
+      localStorage.setItem("username", name);
+      updateAuthUI(name);
+    }
+  };
+
+  logoutBtn.onclick = () => {
+    if (confirm("Are you sure you want to log out?")) {
+      localStorage.removeItem("username");
+      updateAuthUI(null);
+    }
+  };
+
+  function updateAuthUI(name) {
+    if (name) {
+      loginBtn.style.display = "none";
+      logoutBtn.style.display = "inline-block";
+      logoutBtn.textContent = `Logout (${name})`;
+    } else {
+      loginBtn.style.display = "inline-block";
+      logoutBtn.style.display = "none";
+      loginBtn.textContent = "Login";
+    }
+  }
+
+  // 7. Modal & Event Listeners
+  function openHelp() { document.getElementById("helpModal").style.display = "flex"; }
+  function closeHelp() { document.getElementById("helpModal").style.display = "none"; }
+  
+  function showTab(tabId) {
+    document.getElementById('tab-guide').style.display = tabId === 'guide' ? 'block' : 'none';
+    document.getElementById('tab-tips').style.display = tabId === 'tips' ? 'block' : 'none';
+    document.getElementById('btn-guide').classList.toggle('active', tabId === 'guide');
+    document.getElementById('btn-tips').classList.toggle('active', tabId === 'tips');
+  }
+
+  analyzeBtn2.addEventListener("click", analyzeText);
+  document.querySelector(".actions .btn-outline").onclick = openHelp;
+
+  // 8. Onload Initialization
+  window.onload = () => {
+    const savedName = localStorage.getItem("username");
+    updateAuthUI(savedName);
+    renderHistory();
+  };
+</script>
+<div id="helpModal" class="modal-overlay">
+    <div class="modal-card">
+      <button onclick="closeHelp()" style="float:right; background:none; border:none; color:inherit; font-size:1.5rem; cursor:pointer;">&times;</button>
+      <div style="margin-bottom: 1rem;">
+        <button class="tab-btn active" id="btn-guide" onclick="showTab('guide')">Guide</button>
+        <button class="tab-btn" id="btn-tips" onclick="showTab('tips')">Tips</button>
+      </div>
+      <div id="tab-guide">
+        <h3>How it works</h3>
+        <p>Type your message and click 'Say it back'. Our AI analyzes the "vibe" so you don't accidentally sound like a jerk.</p>
+      </div>
+      <div id="tab-tips" style="display:none;">
+        <h3>Tone Tips</h3>
+        <ul>
+          <li>Avoid "..." at the end of short sentences.</li>
+          <li>Sarcasm is hard for AI (and humans) to read!</li>
+          <li>Use emojis to soften direct requests.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  
+  </body>
+    
