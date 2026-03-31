@@ -9,6 +9,11 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Add this to handle the browser's "GET" request to the home page
+app.get('/', (req, res) => {
+  res.send("The Analyze API is alive! Send a POST request to /analyze to use it.");
+});
+
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 // Use 'gemini-1.5-flash' but we will wrap it differently if it fails

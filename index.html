@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Say It Back | Tone Mirror & Fixer</title>
   <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <style>
     body { font-family: sans-serif; margin: 0; background:#f7f7fb; }
     .dark { background:#121212; color:#eee; }
@@ -12,9 +13,6 @@
     .history-item { padding:1rem; border-radius:8px; background:#fff; margin:.5rem 0; }
     .dark .history-item { background:#1f1f1f; }
     .section-label { font-size:.85rem; text-transform:uppercase; opacity:.7; margin-top:1rem; }
-    /* Vibe Meter Bar */
-    .vibe-container { background: #333; height: 10px; width: 100%; border-radius: 5px; margin: 10px 0; overflow: hidden; }
-    #vibeBar { width: 0%; height: 100%; background: #6366f1; transition: all 0.8s ease; }
     
     /* Badges */
     .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: bold; color: white; text-transform: uppercase; }
@@ -26,15 +24,19 @@
     .tab-btn { padding: 8px 16px; cursor: pointer; border: none; background: #ddd; border-radius: 4px; }
     .tab-btn.active { background: #6366f1; color: white; }
   </style>
+  <style>
+  /* This runs the instant the file hits the browser */
+  html, body {
+    background-color: #020617;
+    margin: 0;
+  }
+</style>
 </head>
 
 <body>
   <button class="btn-gradient" id="analyzeBtn">
-    <span id="btnText">🔁 Say it back</span>
     <span class="loader" id="loader"></span>
   </button>
-
-  <button class="btn-outline" id="darkToggle">🌙</button>
 
   <header class="header">
     <div class="logo">🗣️ <span>Say It Back</span></div>
@@ -56,12 +58,11 @@
 
   <main class="container">
     <section class="card">
-      <h2>Say It Back</h2>
-      <p class="subtitle">See how your message sounds to others</p>
+      <h2 style = "font-style: baskerville">Say It Back</h2>
+      <p class="subtitle" id="subheading">See how your message sounds to others</p>
       <textarea id="userInput" placeholder="Type something you want to say…"></textarea>
       <div class="card-footer">
-        <span class="hint">Shift + Enter to analyze</span>
-        <button class="btn-gradient" id="analyzeBtn2">🔁 Say it back</button>
+        <button id="analyzeBtn2">Analyze</button>
       </div>
     </section>
 
@@ -79,8 +80,8 @@
       <p id="impactOut">...</p>
 
       <div class="section-label">Suggested Rewrite</div>
-<div class="output-box" style="position: relative; background: #fff; padding: 1.5rem; border-radius: 8px; border: 1px solid #ddd; margin-top: 5px;">
-  <p id="rewriteOut" style="margin: 0; padding-right: 60px; color: #333;">Your improved message will appear here…</p>
+<div class="output-box" style="position: relative; background: rgba(255, 255, 255, 0.05);border: 1px solid rgba(255, 255, 255, 0.1); cursor: pointer; transition: all 0.2s ease; padding: 1.5rem; border-radius: 8px; border: 0.1px solid #ddd; margin-top: 5px;">
+  <p id="rewriteOut" style="margin: 0; padding-right: 60px; color: white;">Your improved message will appear here…</p>
   
   <button onclick="copyRewrite()" class="btn-outline" style="position: absolute; top: 10px; right: 10px; font-size: 0.7rem; padding: 4px 8px; cursor: pointer;">Copy</button>
 </div>
@@ -88,8 +89,8 @@
 
     <section class="card history">
   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-    <h2 style="margin: 0;">History</h2>
-    <button class="btn-outline" onclick="clearHistory()" style="font-size: 0.75rem; padding: 5px 10px;">
+    <h2 style="margin-left: 200px;">History</h2>
+    <button class="btn-outline" onclick="clearHistory()">
       🗑️ Clear All
     </button>
   </div>
@@ -104,104 +105,310 @@
   <div class="floating-emoji e4">✨</div>
   <div class="floating-emoji e5">🤔</div>
 
-  <script>
-  // 1. Dark mode toggle
-  document.getElementById("darkToggle").onclick = () => document.body.classList.toggle("dark");
+  <script type="module">
+  // 1. Import the functions you need from the Modular SDKs
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-analytics.js";
+  import { getAuth, signInWithPopup, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
 
-  // 2. UI element references
-  const textEl = document.getElementById("btnText");
-  const loader = document.getElementById("loader");
-  const loginBtn = document.getElementById("loginBtn"); // Unified reference
+  // 2. Your web app's Firebase configuration
+  const firebaseConfig = {
+    apiKey: "AIzaSyA8u32r0abNOlKmuBahmDp1p6Q0eQojv60",
+    authDomain: "say-it-back.firebaseapp.com",
+    projectId: "say-it-back",
+    storageBucket: "say-it-back.firebasestorage.app",
+    messagingSenderId: "400702970582",
+    appId: "1:400702970582:web:411a5c9263b2697a05c777",
+    measurementId: "G-82TEX8HJZP"
+  };
+
+  // Initialize Firebase & Auth
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+  const auth = getAuth(app);
+
+  // 3. UI element references
+  const loginBtn = document.getElementById("loginBtn");
   const logoutBtn = document.getElementById("logoutBtn");
   const analyzeBtn2 = document.getElementById("analyzeBtn2");
 
-  // 3. Analysis logic
+  // 4. The Complete & Validated Analysis Logic
   async function analyzeText() {
     const input = document.getElementById("userInput").value;
     if (!input) return alert("Please type something first!");
 
-    textEl.style.display = "none";
-    loader.style.display = "inline-block";
+    const subtitleEl = document.getElementById("subheading");
+    const originalBtnText = analyzeBtn2.textContent;
 
     try {
+      // Put the UI in a loading state
+      analyzeBtn2.disabled = true;
+      analyzeBtn2.textContent = "Analyzing..";
+      if (subtitleEl) subtitleEl.textContent = "Processing your message...";
+
       const res = await fetch("http://localhost:3001/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: input })
       });
 
+      if (!res.ok) throw new Error("Server error");
+      
       const data = await res.json();
 
-      document.getElementById("toneOut").textContent = data.tone;
-      document.getElementById("intentOut").textContent = data.intent;
-      document.getElementById("impactOut").textContent = data.impact;
-      document.getElementById("rewriteOut").textContent = data.rewrite;
+      // Update text output containers
+      document.getElementById("toneOut").textContent = data.tone || "...";
+      document.getElementById("intentOut").textContent = data.intent || "...";
+      document.getElementById("impactOut").textContent = data.impact || "...";
+      document.getElementById("rewriteOut").textContent = data.rewrite || "...";
 
+      // Badge update logic
       const badgeContainer = document.querySelector(".badges");
-      const toneLower = data.tone.toLowerCase();
-      let color = toneLower.includes("hostile") || toneLower.includes("aggressive") ? "#ff4757" : "#2ed573";
-      badgeContainer.innerHTML = `<span class="badge" style="background:${color}">${data.tone.split(',')[0]}</span>`;
+      if (badgeContainer && data.tone) {
+        const toneLower = data.tone.toLowerCase();
+        let color = toneLower.includes("hostile") || toneLower.includes("aggressive") ? "#ff4757" : "#2ed573";
+        badgeContainer.innerHTML = `<span class="badge" style="background:${color}">${data.tone.split(',')[0]}</span>`;
+      }
 
+      // History update logic
       let savedHistory = JSON.parse(localStorage.getItem("sayItBackHistory") || "[]");
       savedHistory.unshift({ text: input, tone: data.tone, time: new Date().toLocaleTimeString() });
       localStorage.setItem("sayItBackHistory", JSON.stringify(savedHistory.slice(0, 10)));
       
       renderHistory();
+
     } catch (err) {
       console.error("Connection Error:", err);
-      alert("Make sure your backend server is running!");
+      alert("Make sure your backend server is running on port 3001!");
     } finally {
-      loader.style.display = "none";
-      textEl.style.display = "inline";
+      // Reset the button and subtitle back to normal
+      analyzeBtn2.disabled = false;
+      analyzeBtn2.textContent = originalBtnText;
+      if (subtitleEl) subtitleEl.textContent = "See how your message sounds to others";
     }
   }
 
-  // 4. Copy to Clipboard Function
+  // 5. Copy to Clipboard Function
+  // 5. Copy to Clipboard Function
   function copyRewrite() {
     const text = document.getElementById("rewriteOut").textContent;
     if (text && !text.includes("Your improved message")) {
-      navigator.clipboard.writeText(text);
-      alert("Copied to clipboard! ✅");
+      navigator.clipboard.writeText(text).then(() => {
+        // High-end, self-dismissing success toast
+        Swal.fire({
+          icon: 'success',
+          title: 'Copied to clipboard!',
+          background: '#1a1f2c',
+          color: '#fff',
+          timer: 1500, // Closes on its own in 1.5 seconds
+          showConfirmButton: false,
+          toast: true, // Makes it a small toast rather than a giant modal
+          position: 'top-end' // Floats it neatly in the corner
+        });
+      }).catch(err => {
+        console.error('Could not copy text: ', err);
+        Swal.fire({
+          icon: 'error',
+          title: 'Oops...',
+          text: 'Failed to copy text.',
+          background: '#1a1f2c',
+          color: '#fff'
+        });
+      });
     }
   }
 
-  // 5. History Functions
+  // 6. History Functions
   function clearHistory() {
-    if (confirm("Are you sure you want to delete your entire history?")) {
-      localStorage.removeItem("sayItBackHistory");
-      renderHistory();
-    }
+    Swal.fire({
+      title: 'Are you sure?',
+      text: "This will permanently delete your entire message history!",
+      icon: 'warning',
+      background: '#1a1f2c',
+      color: '#fff',
+      showCancelButton: true,
+      confirmButtonColor: '#ff4757',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Yes, clear it!',
+      cancelButtonText: 'Cancel'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        localStorage.removeItem("sayItBackHistory");
+        renderHistory();
+        
+        Swal.fire({
+          icon: 'success',
+          title: 'Cleared!',
+          text: 'Your history has been deleted.',
+          background: '#1a1f2c',
+          color: '#fff',
+          timer: 2000,
+          showConfirmButton: false
+        });
+      }
+    });
   }
+  
+  // 7. High-End Custom Logout Popup
+  logoutBtn.onclick = () => {
+    Swal.fire({
+      title: 'Are you sure?',
+      text: "You will need to sign back in to use all features.",
+      icon: 'warning',
+      background: '#1a1f2c',
+      color: '#fff',
+      showCancelButton: true,
+      confirmButtonColor: '#ff4757', // High-end red for destructive actions
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Yes, log me out!',
+      cancelButtonText: 'Cancel'
+    }).then((result) => {
+      // If the user clicked "Yes, log me out!"
+      if (result.isConfirmed) {
+        signOut(auth).then(() => {
+          localStorage.removeItem("username");
+          updateAuthUI(null);
+          
+          // Show a quick success message after logging out
+          Swal.fire({
+            icon: 'success',
+            title: 'Logged Out!',
+            text: 'You have been successfully signed out.',
+            background: '#1a1f2c',
+            color: '#fff',
+            timer: 2000,
+            showConfirmButton: false
+          });
+        }).catch((error) => {
+          console.error(error);
+          Swal.fire({
+            icon: 'error',
+            title: 'Oops...',
+            text: 'Something went wrong during logout.',
+            background: '#1a1f2c',
+            color: '#fff'
+          });
+        });
+      }
+    });
+  };
 
   function renderHistory() {
     const historyList = document.getElementById("historyList");
+    if (!historyList) return;
+
     const savedHistory = JSON.parse(localStorage.getItem("sayItBackHistory") || "[]");
     if (savedHistory.length === 0) {
       historyList.innerHTML = "No messages yet.";
       return;
     }
+
+    // Force top alignment and vertical list
+    historyList.style.display = "flex";
+    historyList.style.flexDirection = "column";
+    historyList.style.justifyContent = "flex-start";
+    historyList.style.gap = "15px";
+    historyList.style.width = "100%";
+
     historyList.innerHTML = savedHistory.map(item => `
-      <div class="history-item">
-        <small style="opacity:0.5">${item.time}</small><br>
-        <strong>You:</strong> ${item.text}<br>
-        <small style="color:#6366f1">${item.tone}</small>
+      <div class="history-item" style="padding: 15px; border-radius: 8px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); width: 100%; box-sizing: border-box;">
+        <small style="opacity:0.5; display: block; margin-bottom: 5px;">${item.time}</small>
+        <span style="font-weight: bold; color: #fff;">You:</span> ${item.text}<br>
+        <div style="color: #818cf8; font-size: 0.9rem; margin-top: 5px;">${item.tone}</div>
       </div>`).join('');
   }
 
-  // 6. Login & Logout Logic
+  // 7. High-End Custom Google Login Popup
   loginBtn.onclick = () => {
-    const name = prompt("Enter your username:");
-    if (name) {
-      localStorage.setItem("username", name);
-      updateAuthUI(name);
-    }
+    Swal.fire({
+      title: 'Sign in to Say It Back',
+      text: 'Choose your preferred login method:',
+      background: '#1a1f2c',
+      color: '#fff',
+      showCancelButton: true,
+      showConfirmButton: false,
+      cancelButtonColor: '#ff4757',
+      cancelButtonText: 'Cancel',
+      html: `
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 20px;">
+          <button id="googleLogin" style="background: #fff; color: #000; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;">
+             Sign in with Google
+          </button>
+        </div>
+      `,
+      didOpen: () => {
+        // Trigger actual secure Google popup
+        document.getElementById('googleLogin').onclick = () => {
+          const provider = new GoogleAuthProvider();
+          
+          signInWithPopup(auth, provider)
+            .then((result) => {
+              const user = result.user;
+              localStorage.setItem("username", user.displayName);
+              updateAuthUI(user.displayName);
+              Swal.close();
+              Swal.fire({ icon: 'success', title: 'Welcome!', text: `Logged in as ${user.displayName}`, background: '#1a1f2c', color: '#fff', timer: 2000, showConfirmButton: false });
+            })
+            .catch((error) => {
+              console.error(error);
+              Swal.fire({ icon: 'error', title: 'Oops...', text: 'Failed to log in with Google.', background: '#1a1f2c', color: '#fff' });
+            });
+        };
+      }
+    });
   };
 
   logoutBtn.onclick = () => {
     if (confirm("Are you sure you want to log out?")) {
-      localStorage.removeItem("username");
-      updateAuthUI(null);
+      signOut(auth).then(() => {
+        localStorage.removeItem("username");
+        updateAuthUI(null);
+      });
     }
+  };
+
+  // 7. High-End Custom Logout Popup
+  logoutBtn.onclick = () => {
+    Swal.fire({
+      title: 'Are you sure?',
+      text: "You will need to sign back in to use all features.",
+      icon: 'warning',
+      background: '#1a1f2c',
+      color: '#fff',
+      showCancelButton: true,
+      confirmButtonColor: '#ff4757', // High-end red for destructive actions
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Yes, log me out!',
+      cancelButtonText: 'Cancel'
+    }).then((result) => {
+      // If the user clicked "Yes, log me out!"
+      if (result.isConfirmed) {
+        signOut(auth).then(() => {
+          localStorage.removeItem("username");
+          updateAuthUI(null);
+          
+          // Show a quick success message after logging out
+          Swal.fire({
+            icon: 'success',
+            title: 'Logged Out!',
+            text: 'You have been successfully signed out.',
+            background: '#1a1f2c',
+            color: '#fff',
+            timer: 2000,
+            showConfirmButton: false
+          });
+        }).catch((error) => {
+          console.error(error);
+          Swal.fire({
+            icon: 'error',
+            title: 'Oops...',
+            text: 'Something went wrong during logout.',
+            background: '#1a1f2c',
+            color: '#fff'
+          });
+        });
+      }
+    });
   };
 
   function updateAuthUI(name) {
@@ -216,7 +423,7 @@
     }
   }
 
-  // 7. Modal & Event Listeners
+  // 8. Modal & Event Listeners
   function openHelp() { document.getElementById("helpModal").style.display = "flex"; }
   function closeHelp() { document.getElementById("helpModal").style.display = "none"; }
   
@@ -227,16 +434,24 @@
     document.getElementById('btn-tips').classList.toggle('active', tabId === 'tips');
   }
 
-  analyzeBtn2.addEventListener("click", analyzeText);
-  document.querySelector(".actions .btn-outline").onclick = openHelp;
+  // Need to use window scoping since we are in a module
+  window.openHelp = openHelp;
+  window.closeHelp = closeHelp;
+  window.showTab = showTab;
+  window.copyRewrite = copyRewrite;
+  window.clearHistory = clearHistory;
 
-  // 8. Onload Initialization
-  window.onload = () => {
-    const savedName = localStorage.getItem("username");
-    updateAuthUI(savedName);
-    renderHistory();
-  };
+  analyzeBtn2.addEventListener("click", analyzeText);
+  
+  const helpTrigger = document.querySelector(".actions .btn-outline");
+  if(helpTrigger) helpTrigger.onclick = openHelp;
+
+  // 9. Onload Initialization
+  const savedName = localStorage.getItem("username");
+  updateAuthUI(savedName);
+  renderHistory();
 </script>
+
 <div id="helpModal" class="modal-overlay">
     <div class="modal-card">
       <button onclick="closeHelp()" style="float:right; background:none; border:none; color:inherit; font-size:1.5rem; cursor:pointer;">&times;</button>
@@ -260,4 +475,4 @@
   </div>
   
   </body>
-    
+</html>
