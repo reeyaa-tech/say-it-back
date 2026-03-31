@@ -44,7 +44,7 @@ body::after { background: #a855f7; bottom: -10%; right: -5%; }
 @keyframes move { from { transform: translate(0,0) scale(1); } to { transform: translate(100px, 100px) scale(1.2); } }
 
 .container {
-  max-width: 5000px ; min-height: 800px; margin: 100px auto; padding: 0 50px;
+  max-width: 1100px ; min-height: 800px; margin: 0 auto; padding: 0 50px;
   display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 40px;
 }
 
