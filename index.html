@@ -17,7 +17,7 @@
     /* Badges */
     .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: bold; color: white; text-transform: uppercase; }
     
-    /* Help Modal (Make sure this is here!) */
+    /* Help Modal */
     .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center; }
     .modal-card { background: white; color: black; padding: 2rem; border-radius: 12px; max-width: 400px; width: 90%; position: relative; }
     .dark .modal-card { background: #1f1f1f; color: #eee; }
@@ -58,7 +58,7 @@
 
   <main class="container">
     <section class="card">
-      <h2 style = "font-style: baskerville">Say It Back</h2>
+      <h2>Say It Back</h2>
       <p class="subtitle" id="subheading">See how your message sounds to others</p>
       <textarea id="userInput" placeholder="Type something you want to say…"></textarea>
       <div class="card-footer">
@@ -106,12 +106,10 @@
   <div class="floating-emoji e5">🤔</div>
 
   <script type="module">
-  // 1. Import the functions you need from the Modular SDKs
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
   import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-analytics.js";
   import { getAuth, signInWithPopup, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
 
-  // 2. Your web app's Firebase configuration
   const firebaseConfig = {
     apiKey: "AIzaSyA8u32r0abNOlKmuBahmDp1p6Q0eQojv60",
     authDomain: "say-it-back.firebaseapp.com",
@@ -141,7 +139,6 @@
     const originalBtnText = analyzeBtn2.textContent;
 
     try {
-      // Put the UI in a loading state
       analyzeBtn2.disabled = true;
       analyzeBtn2.textContent = "Analyzing..";
       if (subtitleEl) subtitleEl.textContent = "Processing your message...";
@@ -156,13 +153,13 @@
       
       const data = await res.json();
 
-      // Update text output containers
+      // text output containers
       document.getElementById("toneOut").textContent = data.tone || "...";
       document.getElementById("intentOut").textContent = data.intent || "...";
       document.getElementById("impactOut").textContent = data.impact || "...";
       document.getElementById("rewriteOut").textContent = data.rewrite || "...";
 
-      // Badge update logic
+      // Badge logic
       const badgeContainer = document.querySelector(".badges");
       if (badgeContainer && data.tone) {
         const toneLower = data.tone.toLowerCase();
@@ -170,7 +167,6 @@
         badgeContainer.innerHTML = `<span class="badge" style="background:${color}">${data.tone.split(',')[0]}</span>`;
       }
 
-      // History update logic
       let savedHistory = JSON.parse(localStorage.getItem("sayItBackHistory") || "[]");
       savedHistory.unshift({ text: input, tone: data.tone, time: new Date().toLocaleTimeString() });
       localStorage.setItem("sayItBackHistory", JSON.stringify(savedHistory.slice(0, 10)));
@@ -181,15 +177,13 @@
       console.error("Connection Error:", err);
       alert("Make sure your backend server is running on port 3001!");
     } finally {
-      // Reset the button and subtitle back to normal
       analyzeBtn2.disabled = false;
       analyzeBtn2.textContent = originalBtnText;
       if (subtitleEl) subtitleEl.textContent = "See how your message sounds to others";
     }
   }
 
-  // 5. Copy to Clipboard Function
-  // 5. Copy to Clipboard Function
+  // 5. Copy to Clipboard Function with High-End Toast
   function copyRewrite() {
     const text = document.getElementById("rewriteOut").textContent;
     if (text && !text.includes("Your improved message")) {

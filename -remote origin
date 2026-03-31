@@ -1,0 +1,35 @@
+[33mcommit 05036b2c098634ad21caf2822881831fd36caa6c[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m, [m[1;31morigin/master[m[33m)[m
+Author: Reeya <reeyaa0812@gmail.com>
+Date:   Tue Mar 31 17:08:20 2026 +0530
+
+    Prep project for Vercel deployment
+
+[33mcommit c572e8e5ac02db2e7a22175828be9a73aed09a24[m
+Author: Reeya <reeyaa0812@gmail.com>
+Date:   Thu Mar 26 02:17:19 2026 +0530
+
+    clean up project and add gitignore
+
+[33mcommit 0d8831fd05d23abb920cd9639ede6b91f6436550[m
+Author: Reeya <reeyaa0812@gmail.com>
+Date:   Sat Jan 10 18:43:58 2026 +0530
+
+    Remove package.json
+
+[33mcommit 1bb654efa637335548ec189e281013527003eca2[m
+Author: Reeya <reeyaa0812@gmail.com>
+Date:   Sat Jan 10 03:09:32 2026 +0530
+
+    Remove vercel.json
+
+[33mcommit 8503495f432701392cdce913e2bf818ccfbb5fc7[m
+Author: Reeya <reeyaa0812@gmail.com>
+Date:   Sat Jan 10 02:29:57 2026 +0530
+
+    Fix routes
+
+[33mcommit bbfee15d318a205277c8370147af6c0a844c08fa[m
+Author: Reeya <reeyaa0812@gmail.com>
+Date:   Sat Jan 10 02:00:51 2026 +0530
+
+    Fix vercel config for API
