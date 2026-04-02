@@ -5,6 +5,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 dotenv.config();
 console.log("Key loaded:", process.env.GEMINI_API_KEY ? "Yes" : "No");
+const cors = require('cors');
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -18,7 +19,7 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 // Use 'gemini-1.5-flash' but we will wrap it differently if it fails
 const model = genAI.getGenerativeModel({ 
-  model: "gemini-2.5-flash" 
+  model: "gemini-2.5-flash"
 });
 
 app.post("/analyze", async (req, res) => {
@@ -46,4 +47,5 @@ app.post("/analyze", async (req, res) => {
   }
 });
 
+const PORT = process.env.PORT || 3001;
 app.listen(3001, () => console.log("Running at http://localhost:3001"));
