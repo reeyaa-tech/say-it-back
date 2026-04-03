@@ -5,7 +5,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 dotenv.config();
 console.log("Key loaded:", process.env.GEMINI_API_KEY ? "Yes" : "No");
-const cors = require('cors');
+cors = require('cors');
 const app = express();
 app.use(cors());
 app.use(express.json());
