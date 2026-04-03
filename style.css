@@ -41,6 +41,11 @@ body::before, body::after {
   z-index: -1; /* Behind everything */
   opacity: 0.2;
 }
+
+h2 {
+  margin-left: 200px;
+}
+
 body::before { background: #6366f1; top: -10%; left: -5%; }
 body::after { background: #a855f7; bottom: -10%; right: -5%; }
 @keyframes move { from { transform: translate(0,0) scale(1); } to { transform: translate(100px, 100px) scale(1.2); } }
