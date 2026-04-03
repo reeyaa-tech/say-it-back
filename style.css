@@ -328,3 +328,37 @@ textarea:focus { border-color: #6366f1; box-shadow: 0 0 0 4px rgba(99, 102, 241,
   background: rgba(255, 255, 255, 0.1);
   border-color: rgba(255, 255, 255, 0.2);
 }
+
+/* 📱 Mobile Styles (Screens smaller than 600px) */
+@media screen and (max-width: 600px) {
+  
+  /* Make the main layout container take up full width with small breathing room */
+  .container {
+    width: 95% !important;
+    padding: 10px !important;
+    margin: 0 auto !important;
+  }
+
+  /* Stack history & analysis cards vertically instead of side-by-side */
+  .card {
+    padding: 1.5rem !important;
+    border-radius: 12px !important;
+  }
+
+  /* Make sure floating emojis don't cover the screen or text */
+  .floating-emoji {
+    display: none; /* Best practice for mobile to keep UI clean! */
+  }
+
+  /* Center headings on mobile */
+  h2 {
+    font-size: 1.5rem !important;
+    text-align: center;
+    margin-left: 0 !important; /* Fixes your history margin from index.html */
+  }
+
+  /* Make input fields and textareas massive and easy to tap */
+  textarea {
+    font-size: 16px !important; /* Prevents iOS from auto-zooming in! */
+  }
+}
