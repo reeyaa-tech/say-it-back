@@ -5,18 +5,17 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 dotenv.config();
 console.log("Key loaded:", process.env.GEMINI_API_KEY ? "Yes" : "No");
+
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Add this to handle the browser's "GET" request to the home page
 app.get('/', (req, res) => {
   res.send("The Analyze API is alive! Send a POST request to /analyze to use it.");
 });
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// Use 'gemini-1.5-flash' but we will wrap it differently if it fails
 const model = genAI.getGenerativeModel({ 
   model: "gemini-2.5-flash"
 });
@@ -24,8 +23,20 @@ const model = genAI.getGenerativeModel({
 app.post("/analyze", async (req, res) => {
   const { text } = req.body; // This is correct
   
-  // Update the prompt to be more strict about the format
-  const prompt = `Analyze tone, intent, impact and rewrite. Return ONLY a raw JSON object with keys: tone, intent, impact, rewrite. Text: "${text}"`;
+  const prompt = `
+Analyze the following message for Tone, Intent, and Impact. 
+Provide the response as a JSON object with keys: "tone", "intent", "impact", and "suggestedRewrite".
+
+CRITICAL INSTRUCTIONS FOR LANGUAGE:
+1. Use simple, plain, everyday conversational English.
+2. Do NOT use complicated, academic, or corporate jargon.
+3. Explain the tone and impact as if you are talking to a middle school student.
+4. Keep the explanations short and direct (maximum 1-2 sentences per section).
+
+Return ONLY the raw JSON. Do not include any extra words outside the JSON structure.
+
+Message to analyze: "${text}"
+`;
 
   try {
     const result = await model.generateContent(prompt);
