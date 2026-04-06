@@ -25,14 +25,18 @@ app.post("/analyze", async (req, res) => {
   
   const prompt = `
 Analyze the following message for Tone, Intent, and Impact. 
-Provide the response as a JSON object with keys: "tone", "intent", "impact", and "suggestedRewrite".
+Provide the response as a JSON object with keys: "tone", "intent", "impact", and "rewrite".
 
 CRITICAL INSTRUCTIONS FOR LANGUAGE:
 1. Use simple, plain, everyday conversational English.
 2. Do NOT use complicated, academic, or corporate jargon.
 3. Explain the tone and impact as if you are talking to a middle school student.
 4. Keep the explanations short and direct (maximum 1-2 sentences per section).
-5. You MUST provide a suggested rewrite, even if the input message is short or written in a mix of Hindi and English. Keep the rewrite in the same language style as the user!
+
+CRITICAL INSTRUCTIONS FOR THE REWRITE:
+5. You MUST provide a suggested rewrite under the "rewrite" key. Do not leave it blank.
+6. If the user's message is in Hinglish (a mix of Hindi and English like "kya hua"), provide a polite and improved rewrite in that same Hinglish style (e.g., "kya hua sab theek hai?"). 
+7. Do not translate the message to pure English unless requested.
 
 Return ONLY the raw JSON. Do not include any extra words outside the JSON structure.
 
@@ -46,6 +50,8 @@ Message to analyze: "${text}"
 
     // Remove markdown formatting that Gemini loves to add
     const cleanReply = reply.replace(/```json|```/g, "").trim();
+
+    console.log("Gemini sent back:", cleanReply);
     
     res.json(JSON.parse(cleanReply));
   } catch (err) {

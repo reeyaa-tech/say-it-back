@@ -51,9 +51,9 @@
     </div>
 
     <div class="actions">
-  <button class="btn-outline">Help</button>
-  <button class="btn-primary" id="loginBtn">Login</button>
-  <button class="btn-outline"
+      <button class="btn-outline">Help</button>
+      <button class="btn-primary" id="loginBtn">Login</button>
+      <button class="btn-outline" id="logoutBtn" style="display: none;">Logout</button>
     </div>
 </header>
 
@@ -155,7 +155,16 @@ const data = await response.json(); // 👈 Use 'response' instead of 'res'
       document.getElementById("toneOut").textContent = data.tone || "...";
       document.getElementById("intentOut").textContent = data.intent || "...";
       document.getElementById("impactOut").textContent = data.impact || "...";
-      document.getElementById("rewriteOut").textContent = data.rewrite || "...";
+      
+      const finalRewrite = data.rewrite || data.suggestedRewrite || data.Rewrite || data.SuggestedRewrite;
+      
+      const rewriteElement = document.getElementById("rewriteOut");
+      if (finalRewrite) {
+          rewriteElement.textContent = finalRewrite;
+          rewriteElement.style.color = "white"; // Make sure it isn't rendering invisibly!
+      } else {
+          rewriteElement.textContent = "AI did not generate a rewrite for this message.";
+      }
 
       // Badge logic
       const badgeContainer = document.querySelector(".badges");
