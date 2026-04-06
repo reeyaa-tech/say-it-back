@@ -32,6 +32,7 @@ CRITICAL INSTRUCTIONS FOR LANGUAGE:
 2. Do NOT use complicated, academic, or corporate jargon.
 3. Explain the tone and impact as if you are talking to a middle school student.
 4. Keep the explanations short and direct (maximum 1-2 sentences per section).
+5. You MUST provide a suggested rewrite, even if the input message is short or written in a mix of Hindi and English. Keep the rewrite in the same language style as the user!
 
 Return ONLY the raw JSON. Do not include any extra words outside the JSON structure.
 
